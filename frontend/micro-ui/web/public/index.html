@@ -20,6 +20,34 @@
   <title>24x7 ON Courts</title>
   <!-- <script src="https://s3.ap-south-1.amazonaws.com/egov-dev-assets/globalConfigs.js"></script> -->
   <script>
+    // Mobile device detection — runs before any other JS loads so mobile users
+    // are redirected to the mobile PWA at /m/ without downloading the desktop bundle.
+    // Skip if already under /m/, or if user explicitly requested ?desktop=1.
+    (function () {
+      try {
+        var path = window.location.pathname || "";
+        var search = window.location.search || "";
+        if (path.indexOf("/m/") === 0 || path === "/m") return;
+        if (/[?&]desktop=1\b/.test(search)) {
+          try { sessionStorage.setItem("force_desktop", "1"); } catch (e) {}
+          return;
+        }
+        try { if (sessionStorage.getItem("force_desktop") === "1") return; } catch (e) {}
+
+        var ua = navigator.userAgent || "";
+        var isMobileUA = /Mobi|Android|iPhone|iPod|IEMobile|BlackBerry|webOS|Opera Mini/i.test(ua);
+        var isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) && !/Mobile/i.test(ua);
+        var isSmallScreen = (window.innerWidth || document.documentElement.clientWidth || 0) <= 820;
+
+        if ((isMobileUA || isSmallScreen) && !isTabletUA) {
+          window.location.replace("/m" + (path === "/" ? "/" : path) + search);
+          return;
+        }
+      } catch (e) {
+        // If anything fails, fall through to desktop — never block boot.
+      }
+    })();
+
     // Detect Full Document Reload
     console.log("APP_BOOT", {
       timeOrigin: performance.timeOrigin,
